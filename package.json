@@ -1,0 +1,27 @@
+{
+  "name": "NewIceE",
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "@babel/cli": "^7.14.3",
+    "@babel/core": "^7.14.3",
+    "@babel/preset-env": "^7.14.2",
+    "@babel/preset-react": "^7.13.13",
+    "@babel/preset-typescript": "^7.13.0",
+    "@types/react": "^18.0.27",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "react": "^18.2.0",
+    "typescript": "^4.2.4"
+  },
+  "scripts": {
+    "start:react": "node icee -s 'yarn start' sfy-react-start",
+    "start:next": "node icee -s 'yarn dev' sfy-next-start",
+    "build:react": "node icee -b sfy-react-start && cd packages/sfy-react-start && yarn build",
+    "build:next": "node icee -b sfy-next-start && cd packages/sfy-next-start && yarn build"
+  },
+  "version": "0.5.0",
+  "main": "index.js",
+  "author": "cql <1373611035@qq.com>",
+  "license": "MIT"
+}

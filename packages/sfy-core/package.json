@@ -1,0 +1,10 @@
+{
+  "name": "sfy-core",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "icetf": "^0.8.0"
+  }
+}
