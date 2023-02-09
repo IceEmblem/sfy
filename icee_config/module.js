@@ -124,7 +124,7 @@ function copyModules(startModule) {
         if (fs.existsSync(dist)) {
             try {
                 // 有可能dist是一个快捷方式，可以直接删除
-                fs.rmdirSync(dist);
+                fs.unlinkSync(dist);
             }
             catch {
                 // 否则递归删除
