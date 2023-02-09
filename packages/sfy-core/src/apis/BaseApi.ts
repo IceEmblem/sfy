@@ -1,58 +1,38 @@
 import { Entity } from "./models";
 
-// 请求数据
-fetchDates() {
-    let urlParams: any = {
-        page: this.state.table.page,
-        itemsPerPage: this.state.table.pageSize,
-    };
+async function sfyFetch<T>(input: RequestInfo | URL, init?: RequestInit | undefined) : Promise<T> {
+    let response = await fetch(input, init);
 
-    if (this.state.table.selectClass && this.props.classConfig) {
-        urlParams[this.props.classConfig.queryName] = this.state.table.selectClass;
+    // 再这里处理 html 异步请求结果，如 404 等问题
+    if (response.status >= 200 && response.status < 300) {
+        if (response.status == 204) {
+            return null as T;
+        }
+
+        return response.json();
     }
 
-    let sorter = this.state.table.sorter;
-    if (sorter && sorter.field && sorter.order) {
-        urlParams[`order[${sorter.field}]`] = sorter.order == 'ascend' ? 'asc' : 'desc';
+    if (response.status == 401) {
+        let error = new Error('401 Authentication failed');
+        throw error;
     }
 
-    if (this.state.filters) {
-        Object.keys(this.state.filters).forEach(key => {
-            if (this.state.filters[key]) {
-                urlParams[key] = this.state.filters[key];
-            }
-        });
+    if (response.status == 404) {
+        let error = new Error('404 Resource not found');
+        throw error;
     }
 
-    this.setState({ isLoading: true });
+    if (response.status >= 400 && response.status < 500) {
+        let data = await response.json();
+        let error = new Error(`${data['hydra:description'] || 'unknown exception'}`);
+        throw error;
+    }
 
-    IceFetch.fetch({
-        url: this.props.url,
-        method: 'GET',
-        urlParams: urlParams,
-    }).then(data => {
-        let datas = data['hydra:member'];
-
-        datas.forEach((item: any) => {
-            item.key = item.id;
-        });
-        this.setState({
-            datas: datas,
-            total: data['hydra:totalItems']
-        });
-
-        // 清空选择的行
-        this.setState({
-            selectedRowKeys: [],
-            selectedRows: [],
-        }, () => {
-            this.props.onSelectChange?.([], []);
-        });
-    }).catch(() => {
-    }).finally(() => {
-        this.setState({ isLoading: false });
-    })
+    const error = new Error(`${response.status} ${response.statusText}`);
+    throw error;
 }
+
+const urlRegex = /\?[^\?]+$/;
 
 // 合并url参数到url上
 function mergeUrl(url: string, urlParams: any) {
@@ -73,39 +53,19 @@ function mergeUrl(url: string, urlParams: any) {
             return;
         }
 
-        if (Array.isArray(param)) {
-            param.forEach(item => {
-                // %5B%5D 就是 []
-                urlParamStr = urlParamStr + `${key}%5B%5D=${encodeURIComponent(item)}&`
-            });
-        }
-        else if (param instanceof NumRange) {
-            if (param.min != undefined && param.min != null) {
-                urlParamStr = urlParamStr + `${key}%5Bgte%5D=${param.min}&`
-            }
-
-            if (param.max != undefined && param.max != null) {
-                urlParamStr = urlParamStr + `${key}%5Blte%5D=${param.max}&`
-            }
-        }
-        else if (param instanceof DateRange) {
-            if (param.min) {
-                urlParamStr = urlParamStr + `${key}%5Bafter%5D=${param.min.toDate()?.toISOString().substring(0, 19)}&`
-            }
-
-            if (param.max) {
-                urlParamStr = urlParamStr + `${key}%5Bbefore%5D=${param.max.toDate()?.toISOString().substring(0, 19)}&`
-            }
-        }
-        else {
-            urlParamStr = urlParamStr + `${encodeURI(key)}=${encodeURIComponent(param)}&`
-        }
+        urlParamStr = urlParamStr + `${key}=${encodeURIComponent(param)}&`
     });
 
     return encodeURI(newUrl) + urlParamStr;
 }
 
-abstract class BaseApi<T extends Entity> {
+type FilterValueType = undefined | boolean | number | string | Array<number | string | Date>;
+interface ListRespone<T> {
+    'hydra:member': Array<T>,
+    'hydra:totalItems': number
+}
+
+export default abstract class BaseApi<T extends Entity> {
     abstract url: string;
 
     get(id: string): T {
@@ -124,15 +84,57 @@ abstract class BaseApi<T extends Entity> {
 
     }
 
-    getList(
-        page: number, 
-        itemsPerPage: number, 
-        filters: T,
-        sortField: keyof T, 
-        sortDirection: 'asc' | 'desc') 
-    {
-        fetch(this.url, {
-            
-        })
+    async getList(
+        page: number,
+        itemsPerPage: number,
+        filters?: { [k in (keyof T)]: FilterValueType },
+        sortField?: keyof T,
+        sortDirection?: 'asc' | 'desc') {
+        let urlParams = {
+            page: page,
+            itemsPerPage: itemsPerPage
+        } as any;
+
+        if (filters) {
+            for (let key of Object.keys(filters)) {
+                let value = (filters as any)[key] as FilterValueType;
+                if (!value) {
+                    continue;
+                }
+
+                if (Array.isArray(value) && value.length > 0) {
+                    // 范围筛选
+                    if (typeof (value[0]) == 'number') {
+                        urlParams[`${key}%5Bgte%5D`] = value[0];
+                        urlParams[`${key}%5Blte%5D`] = value[1];
+                        continue;
+                    }
+
+                    // 多选值筛选
+                    if (typeof (value[0]) == 'string') {
+                        for (let s of value) {
+                            urlParams[`${key}%5B%5D`] = s;
+                        }
+                        continue;
+                    }
+
+                    // 日期范围筛选
+                    if (typeof (value[0]) == 'object') {
+                        urlParams[`${key}%5Bafter%5D`] = (value[0] as Date)?.toISOString().substring(0, 19);
+                        urlParams[`${key}%5Bbefore%5D`] = (value[1] as Date)?.toISOString().substring(0, 19);
+                        continue;
+                    }
+                }
+
+                urlParams[key] = value;
+            }
+        }
+
+        if(sortField){
+            urlParams[`order%5B${sortField as string}%5D`] = sortDirection;
+        }
+
+        let newUrl = mergeUrl(this.url, urlParams);
+        return await sfyFetch<ListRespone<T>>(newUrl);
     }
 }
