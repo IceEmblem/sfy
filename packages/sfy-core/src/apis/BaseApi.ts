@@ -1,36 +1,5 @@
 import { Entity } from "./models";
-
-async function sfyFetch<T>(input: RequestInfo | URL, init?: RequestInit | undefined) : Promise<T> {
-    let response = await fetch(input, init);
-
-    // 再这里处理 html 异步请求结果，如 404 等问题
-    if (response.status >= 200 && response.status < 300) {
-        if (response.status == 204) {
-            return null as T;
-        }
-
-        return response.json();
-    }
-
-    if (response.status == 401) {
-        let error = new Error('401 Authentication failed');
-        throw error;
-    }
-
-    if (response.status == 404) {
-        let error = new Error('404 Resource not found');
-        throw error;
-    }
-
-    if (response.status >= 400 && response.status < 500) {
-        let data = await response.json();
-        let error = new Error(`${data['hydra:description'] || 'unknown exception'}`);
-        throw error;
-    }
-
-    const error = new Error(`${response.status} ${response.statusText}`);
-    throw error;
-}
+import sfyFetch from "./sfyFetch";
 
 const urlRegex = /\?[^\?]+$/;
 
@@ -68,20 +37,29 @@ interface ListRespone<T> {
 export default abstract class BaseApi<T extends Entity> {
     abstract url: string;
 
-    get(id: string): T {
-        return {} as any;
+    async get(id: string): Promise<T> {
+        let newUrl = `${this.url}/${id}`;
+        return await sfyFetch<T>(newUrl);
     }
 
-    create(model: T): void {
-
+    async create(model: T): Promise<T> {
+        return await sfyFetch<T>(this.url, {
+            method: 'POST',
+            body: JSON.stringify(model)
+        });
     }
 
-    update(model: T): void {
-
+    async update(model: T): Promise<T> {
+        return await sfyFetch<T>(`${this.url}/${model.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(model)
+        });
     }
 
-    delete(id: string): void {
-
+    async delete(id: string): Promise<void> {
+        return await sfyFetch<void>(`${this.url}/${id}`, {
+            method: 'DELETE'
+        });
     }
 
     async getList(
@@ -89,7 +67,8 @@ export default abstract class BaseApi<T extends Entity> {
         itemsPerPage: number,
         filters?: { [k in (keyof T)]: FilterValueType },
         sortField?: keyof T,
-        sortDirection?: 'asc' | 'desc') {
+        sortDirection?: 'asc' | 'desc') 
+    {
         let urlParams = {
             page: page,
             itemsPerPage: itemsPerPage
