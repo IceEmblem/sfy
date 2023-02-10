@@ -10,7 +10,6 @@ class Module extends BaseModule {
     }
 
     postInitialize() {
-        // 生成 redux store
         IEStore.createStore();
     }
 }
