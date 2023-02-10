@@ -23,7 +23,6 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        {Module.key}
         <div className={styles.description}>
           <p>
             Get started by editing&nbsp;
