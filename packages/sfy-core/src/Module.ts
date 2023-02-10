@@ -1,16 +1,17 @@
 import { BaseModule, ModuleFactory, MiddlewareFactory, IEStore, IceFetch } from 'icetf'
 
-class Module extends BaseModule
-{
+class Module extends BaseModule {
     key = 'sfy-core';
 
-    preInitialize(){
+    preInitialize() {
     }
 
-    initialize(){
+    initialize() {
     }
 
-    postInitialize(){
+    postInitialize() {
+        // 生成 redux store
+        IEStore.createStore();
     }
 }
 

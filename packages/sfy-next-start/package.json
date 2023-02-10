@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "iceeConfig": {
-    "hoistDependencies": true
+    "hoistDependencies": false
   },
   "dependencies": {
     "@next/font": "13.1.6",
@@ -22,8 +22,5 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "sfy-core": "workspace:packages/sfy-core"
-  },
-  "installConfig": {
-    "hoistingLimits": "workspaces"
   }
 }

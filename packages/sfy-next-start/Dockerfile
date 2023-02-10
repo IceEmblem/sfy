@@ -3,10 +3,10 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-COPY ./public ./public
-COPY ./.next ./.next
-COPY ./node_modules ./node_modules
-COPY ./package.json ./package.json
+COPY ./public ./root/public
+COPY ./.next ./root/.next
+COPY ../../node_modules ./root/node_modules
+COPY ./package.json ./root/package.json
 
 EXPOSE 3000
 
