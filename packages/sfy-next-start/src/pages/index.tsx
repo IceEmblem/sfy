@@ -4,6 +4,7 @@ import { Inter } from '@next/font/google'
 import styles from '../styles/Home.module.css'
 import { Module, UserApi } from 'sfy-core'
 import { useEffect } from 'react'
+import React from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 

@@ -1,6 +1,6 @@
 import token from './token';
 
-export default async function sfyFetch<T>(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<T> {
+export default async function sfyFetch<T>(input: string, init?: RequestInit | undefined): Promise<T> {
     let newInit: RequestInit = {
         ...init
     };
